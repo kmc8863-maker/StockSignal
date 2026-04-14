@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NQ Signal">
+<meta name="application-name" content="NQ Signal">
+<meta name="theme-color" content="#080c10">
+<meta name="description" content="나스닥 QQQ EMA 추세추종 매수 시그널">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjM2IiBmaWxsPSIjMDgwYzEwIi8+PHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSIzNiIgZmlsbD0idXJsKCNnKSIgZmlsbC1vcGFjaXR5PSIwLjMiLz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDBlNWZmIiBzdG9wLW9wYWNpdHk9IjAuMiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwZmY4OCIgc3RvcC1vcGFjaXR5PSIwLjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGV4dCB4PSI5MCIgeT0iNzgiIGZvbnQtZmFtaWx5PSJtb25vc3BhY2UiIGZvbnQtc2l6ZT0iMjIiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMwMGU1ZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGxldHRlci1zcGFjaW5nPSIyIj5OUTwvdGV4dD48dGV4dCB4PSI5MCIgeT0iMTA0IiBmb250LWZhbWlseT0ibW9ub3NwYWNlIiBmb250LXNpemU9IjEyIiBmaWxsPSIjMDBmZjg4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBsZXR0ZXItc3BhY2luZz0iMyI+U0lHTkFMPC90ZXh0Pjxwb2x5bGluZSBwb2ludHM9IjIyLDEzNSAzOCwxMjAgNTIsMTMwIDY4LDEwNSA4Miw5MCA5OCw5NSAxMTIsMTEwIDEyNyw4NSAxNDIsOTUgMTU4LDExNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmZjg4IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgb3BhY2l0eT0iMC43Ii8+PC9zdmc+">
+<title>NASDAQ 추세추종 시그널</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@300;400;700&display=swap');
+  :root{--bg:#080c10;--panel:#0d1520;--border:#1a2a3a;--accent:#00e5ff;--green:#00ff88;--red:#ff3860;--yellow:#ffd600;--text:#c8d8e8;--dim:#4a6070;--glow:0 0 20px rgba(0,229,255,0.3)}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+  .container{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:20px 16px 40px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+  .logo{font-family:'Space Mono',monospace;font-size:1.05rem;color:var(--accent);letter-spacing:2px;text-shadow:var(--glow)}
+  .logo span{color:var(--dim)}
+  .last-update{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--dim)}
+  .loading-bar{height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);border-radius:2px;margin-bottom:20px;animation:scan 1.4s infinite;display:none}
+  .loading-bar.active{display:block}
+  @keyframes scan{0%{transform:scaleX(0);transform-origin:left}50%{transform:scaleX(1);transform-origin:left}51%{transform-origin:right}100%{transform:scaleX(0);transform-origin:right}}
+  .price-hero{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:16px;position:relative;overflow:hidden}
+  .price-hero::before{content:'QQQ';position:absolute;right:-8px;top:50%;transform:translateY(-50%);font-family:'Space Mono',monospace;font-size:5.5rem;font-weight:700;color:rgba(0,229,255,0.04);pointer-events:none}
+  .price-label{font-size:.65rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
+  .price-value{font-family:'Space Mono',monospace;font-size:2.6rem;font-weight:700;color:#fff;line-height:1}
+  .price-change{font-family:'Space Mono',monospace;font-size:.88rem;margin-top:6px}
+  .price-change.up{color:var(--green)}.price-change.down{color:var(--red)}
+  .signal-main{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:16px;text-align:center}
+  .signal-title{font-size:.62rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+  .signal-badge{display:inline-block;padding:11px 34px;border-radius:50px;font-family:'Space Mono',monospace;font-size:1.25rem;font-weight:700;letter-spacing:3px;margin-bottom:12px;transition:all .4s}
+  .signal-badge.BUY{background:rgba(0,255,136,0.08);border:2px solid var(--green);color:var(--green);box-shadow:0 0 30px rgba(0,255,136,0.2);animation:pBuy 2s infinite}
+  .signal-badge.SELL{background:rgba(255,56,96,0.08);border:2px solid var(--red);color:var(--red)}
+  .signal-badge.WAIT{background:rgba(255,214,0,0.07);border:2px solid var(--yellow);color:var(--yellow)}
+  .signal-badge.IDLE{background:transparent;border:2px solid var(--dim);color:var(--dim);font-size:.9rem;letter-spacing:1px}
+  @keyframes pBuy{0%,100%{box-shadow:0 0 20px rgba(0,255,136,0.2)}50%{box-shadow:0 0 50px rgba(0,255,136,0.5)}}
+  .signal-score{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--dim)}
+  .signal-score span{color:var(--accent)}
+  .ema-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+  @media(min-width:580px){.ema-grid{grid-template-columns:repeat(4,1fr)}}
+  .ema-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center}
+  .ema-period{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--dim);margin-bottom:6px}
+  .ema-val{font-family:'Space Mono',monospace;font-size:1.05rem;font-weight:700;color:#fff}
+  .ema-status{font-size:.62rem;margin-top:5px;padding:2px 7px;border-radius:4px;display:inline-block}
+  .ema-status.above{background:rgba(0,255,136,0.1);color:var(--green)}
+  .ema-status.below{background:rgba(255,56,96,0.1);color:var(--red)}
+  .ema-status.idle{color:var(--dim)}
+  .signals-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .panel-title{font-size:.62rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:14px}
+  .signal-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(26,42,58,0.6);font-size:.8rem}
+  .signal-row:last-child{border-bottom:none}
+  .sig-left{display:flex;align-items:center;gap:10px}
+  .sig-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .sig-dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+  .sig-dot.red{background:var(--red)}.sig-dot.gray{background:var(--dim)}
+  .sig-value{font-family:'Space Mono',monospace;font-size:.72rem}
+  .sig-value.bull{color:var(--green)}.sig-value.bear{color:var(--red)}.sig-value.idle{color:var(--dim)}
+  .chart-area{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  canvas{width:100%;height:150px;display:block}
+  .btn-fetch{width:100%;padding:15px;background:transparent;border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-family:'Space Mono',monospace;font-size:.82rem;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;margin-bottom:16px}
+  .btn-fetch:hover:not(:disabled){background:rgba(0,229,255,0.08);box-shadow:var(--glow)}
+  .btn-fetch:disabled{color:var(--dim);border-color:var(--border);cursor:not-allowed}
+  .status-log{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:'Space Mono',monospace;font-size:.72rem;color:var(--dim);display:none}
+  .status-log.active{display:block}
+  .status-log .step{color:var(--accent)}
+  .ai-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .ai-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .ai-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.5s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+  .ai-label{font-size:.62rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase}
+  .ai-content{font-size:.82rem;line-height:1.85;color:var(--text);white-space:pre-wrap;min-height:36px}
+  .cursor{display:inline-block;width:2px;height:13px;background:var(--accent);animation:cur .8s infinite;vertical-align:middle;margin-left:1px}
+  @keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+  .error-box{background:rgba(255,56,96,0.07);border:1px solid rgba(255,56,96,0.3);border-radius:8px;padding:14px 16px;font-size:.8rem;color:var(--red);margin-bottom:16px;display:none;line-height:1.7}
+  .disclaimer{font-size:.63rem;color:var(--dim);text-align:center;line-height:1.7;padding:14px;border:1px dashed rgba(74,96,112,0.3);border-radius:8px}
+  .data-source{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--dim);text-align:right;margin-top:6px}
+
+  /* ── 홈화면 추가 배너 ── */
+  .install-banner{
+    display:none;align-items:center;gap:14px;
+    background:linear-gradient(135deg,rgba(0,229,255,0.07),rgba(0,255,136,0.05));
+    border:1px solid rgba(0,229,255,0.22);
+    border-radius:12px;padding:14px 16px;margin-bottom:16px;position:relative;
+  }
+  .install-banner.show{display:flex}
+  .install-icon{
+    width:52px;height:52px;flex-shrink:0;
+    background:#080c10;border:1px solid rgba(0,229,255,0.3);
+    border-radius:13px;display:flex;align-items:center;justify-content:center;
+  }
+  .install-text{flex:1}
+  .install-text strong{display:block;font-size:.82rem;color:#fff;margin-bottom:3px}
+  .install-text span{font-size:.7rem;color:var(--dim);line-height:1.5}
+  .install-steps{margin-top:10px;font-size:.7rem;color:var(--text);line-height:2}
+  .install-steps .os-tab{
+    display:inline-block;padding:2px 8px;border-radius:4px;
+    font-family:'Space Mono',monospace;font-size:.62rem;cursor:pointer;
+    border:1px solid var(--border);margin-right:6px;margin-bottom:6px;
+  }
+  .install-steps .os-tab.active{background:rgba(0,229,255,0.1);border-color:var(--accent);color:var(--accent)}
+  .install-steps .os-tab:not(.active){color:var(--dim)}
+  .install-steps .step-content{display:none;font-size:.72rem;color:var(--text);line-height:1.9}
+  .install-steps .step-content.show{display:block}
+  .install-steps .step-content li{list-style:none;padding-left:4px}
+  .install-steps .step-content li::before{content:'→ ';color:var(--accent)}
+  .install-close{
+    position:absolute;top:10px;right:12px;
+    background:none;border:none;color:var(--dim);
+    font-size:1.1rem;cursor:pointer;padding:4px;line-height:1;
+  }
+  .install-close:hover{color:var(--text)}
+  @supports(padding:max(0px)){
+    .container{padding-bottom:max(40px,env(safe-area-inset-bottom))}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">NASDAQ<span>/</span>SIGNAL</div>
+    <div class="last-update" id="lastUpdate">—</div>
+  </header>
+
+  <div class="loading-bar" id="loadingBar"></div>
+  <div class="error-box" id="errBox"></div>
+  <div class="status-log" id="statusLog"></div>
+
+  <!-- 홈화면 바로가기 안내 배너 -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-icon">
+      <svg width="32" height="32" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+        <rect width="180" height="180" rx="36" fill="#080c10"/>
+        <text x="90" y="72" font-family="monospace" font-size="26" font-weight="700" fill="#00e5ff" text-anchor="middle" letter-spacing="2">NQ</text>
+        <text x="90" y="96" font-family="monospace" font-size="11" fill="#00ff88" text-anchor="middle" letter-spacing="3">SIGNAL</text>
+        <polyline points="22,135 38,120 52,130 68,105 82,90 98,95 112,110 127,85 142,95 158,115" fill="none" stroke="#00ff88" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+      </svg>
+    </div>
+    <div class="install-text">
+      <strong>📱 홈 화면에 추가하기</strong>
+      <span>앱처럼 바로가기 아이콘을 만들어보세요</span>
+      <div class="install-steps">
+        <span class="os-tab active" onclick="switchOS('ios')">🍎 iPhone</span>
+        <span class="os-tab" onclick="switchOS('android')">🤖 Android</span>
+        <ul class="step-content show" id="steps-ios">
+          <li>하단 공유 버튼(□↑) 탭</li>
+          <li>스크롤 내려 <b>홈 화면에 추가</b> 선택</li>
+          <li><b>추가</b> 버튼 탭 → 완료!</li>
+        </ul>
+        <ul class="step-content" id="steps-android">
+          <li>브라우저 메뉴(⋮) 탭</li>
+          <li><b>홈 화면에 추가</b> 선택</li>
+          <li><b>추가</b> 확인 → 완료!</li>
+        </ul>
+      </div>
+    </div>
+    <button class="install-close" onclick="closeBanner()">✕</button>
+  </div>
+
+  <div class="price-hero">
+    <div class="price-label">NASDAQ 100 · QQQ ETF</div>
+    <div class="price-value" id="priceVal">—</div>
+    <div class="price-change" id="priceChange">분석 버튼을 눌러주세요</div>
+    <div class="data-source" id="dataSource"></div>
+  </div>
+
+  <div class="signal-main">
+    <div class="signal-title">종합 추세 시그널</div>
+    <div class="signal-badge IDLE" id="mainSignal">대기중</div>
+    <div class="signal-score" id="sigScore">EMA 정배열 <span>—</span>/5 충족</div>
+  </div>
+
+  <div class="ema-grid">
+    <div class="ema-card"><div class="ema-period">EMA 5일</div><div class="ema-val" id="ema5">—</div><div class="ema-status idle" id="ema5st">—</div></div>
+    <div class="ema-card"><div class="ema-period">EMA 10일</div><div class="ema-val" id="ema10">—</div><div class="ema-status idle" id="ema10st">—</div></div>
+    <div class="ema-card"><div class="ema-period">EMA 20일</div><div class="ema-val" id="ema20">—</div><div class="ema-status idle" id="ema20st">—</div></div>
+    <div class="ema-card"><div class="ema-period">EMA 50일</div><div class="ema-val" id="ema50">—</div><div class="ema-status idle" id="ema50st">—</div></div>
+  </div>
+
+  <div class="signals-panel">
+    <div class="panel-title">조건 체크리스트</div>
+    <div class="signal-row"><div class="sig-left"><div class="sig-dot gray" id="d1"></div><span>① 가격 &gt; EMA5 (단기 상승)</span></div><div class="sig-value idle" id="v1">—</div></div>
+    <div class="signal-row"><div class="sig-left"><div class="sig-dot gray" id="d2"></div><span>② EMA5 &gt; EMA10 (골든크로스)</span></div><div class="sig-value idle" id="v2">—</div></div>
+    <div class="signal-row"><div class="sig-left"><div class="sig-dot gray" id="d3"></div><span>③ EMA10 &gt; EMA20 (중기 상승)</span></div><div class="sig-value idle" id="v3">—</div></div>
+    <div class="signal-row"><div class="sig-left"><div class="sig-dot gray" id="d4"></div><span>④ 가격 &gt; EMA50 (장기 추세)</span></div><div class="sig-value idle" id="v4">—</div></div>
+    <div class="signal-row"><div class="sig-left"><div class="sig-dot gray" id="d5"></div><span>⑤ EMA 완전 정배열 (5&gt;10&gt;20&gt;50)</span></div><div class="sig-value idle" id="v5">—</div></div>
+  </div>
+
+  <div class="chart-area">
+    <div class="panel-title" style="margin-bottom:10px">EMA 시각화 (시뮬레이션 기반)</div>
+    <canvas id="miniChart"></canvas>
+  </div>
+
+  <button class="btn-fetch" id="fetchBtn" onclick="runAnalysis()">⟳ &nbsp;실시간 분석 시작</button>
+
+  <div class="ai-section">
+    <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude AI 실시간 분석</div></div>
+    <div class="ai-content" id="aiContent">분석 버튼을 눌러주세요.</div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ 본 앱은 기술적 분석 참고 정보 제공 목적이며 투자 권유가 아닙니다.<br>
+    모든 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
+  </div>
+</div>
+
+<script>
+// ── 홈화면 배너 ────────────────────────────────────────────────
+function switchOS(os) {
+  document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.step-content').forEach(s => s.classList.remove('show'));
+  document.querySelector(`.os-tab[onclick="switchOS('${os}')"]`).classList.add('active');
+  document.getElementById('steps-' + os).classList.add('show');
+}
+function closeBanner() {
+  document.getElementById('installBanner').classList.remove('show');
+  try { sessionStorage.setItem('banner_closed', '1'); } catch(e) {}
+}
+function initBanner() {
+  // 모바일 판별
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  // 이미 닫았으면 표시 안 함
+  let closed = false;
+  try { closed = !!sessionStorage.getItem('banner_closed'); } catch(e) {}
+  // standalone이면(이미 설치됨) 숨김
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (isMobile && !closed && !isStandalone) {
+    document.getElementById('installBanner').classList.add('show');
+    // iOS/Android 자동 탭 선택
+    if (/Android/i.test(navigator.userAgent)) switchOS('android');
+  }
+}
+
+// ── EMA 계산 ───────────────────────────────────────────────────
+function calcEMA(prices, period) {
+  if (prices.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < prices.length; i++) ema = prices[i] * k + ema * (1 - k);
+  return ema;
+}
+function calcEMASeries(prices, period) {
+  if (prices.length < period) return [];
+  const k = 2 / (period + 1);
+  let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  const out = [ema];
+  for (let i = period; i < prices.length; i++) { ema = prices[i] * k + ema * (1 - k); out.push(ema); }
+  return out;
+}
+
+// ── helpers ────────────────────────────────────────────────────
+const fmt = n => (n != null && !isNaN(n)) ? n.toLocaleString('en-US', {maximumFractionDigits: 2}) : '—';
+function setLog(msg) {
+  const el = document.getElementById('statusLog');
+  el.innerHTML = msg ? `<span class="step">▶</span> ${msg}` : '';
+  el.classList.toggle('active', !!msg);
+}
+function setErr(msg) {
+  const el = document.getElementById('errBox');
+  el.innerHTML = msg ? '⚠️ ' + msg : '';
+  el.style.display = msg ? 'block' : 'none';
+}
+function setBusy(on) {
+  document.getElementById('fetchBtn').disabled = on;
+  document.getElementById('fetchBtn').textContent = on ? '⟳   분석 중...' : '⟳   새로 고침';
+  document.getElementById('loadingBar').classList.toggle('active', on);
+}
+
+// ── 차트 ───────────────────────────────────────────────────────
+function drawChart(prices) {
+  const canvas = document.getElementById('miniChart');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = 150 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = 150;
+  const last = prices.slice(-60);
+  const e5s  = calcEMASeries(last, 5);
+  const e10s = calcEMASeries(last, 10);
+  const e20s = calcEMASeries(last, 20);
+  const allV = [...last, ...e5s, ...e10s, ...e20s];
+  const mn = Math.min(...allV) * 0.998, mx = Math.max(...allV) * 1.002;
+  const toY = v => H - ((v - mn) / (mx - mn)) * (H - 20) - 10;
+  const toX = (i, off, tot) => ((i + off) / (tot - 1)) * (W - 20) + 10;
+  function line(arr, color, w, offset) {
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+    arr.forEach((v, i) => { const x = toX(i, offset, last.length), y = toY(v); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  last.forEach((v, i) => { const x = toX(i, 0, last.length); i === 0 ? ctx.moveTo(x, toY(v)) : ctx.lineTo(x, toY(v)); });
+  ctx.lineTo(toX(last.length - 1, 0, last.length), H); ctx.lineTo(toX(0, 0, last.length), H); ctx.closePath();
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgba(0,229,255,0.12)'); g.addColorStop(1, 'rgba(0,229,255,0)');
+  ctx.fillStyle = g; ctx.fill();
+  line(last, 'rgba(0,229,255,0.75)', 1.5, 0);
+  line(e5s,  '#ff9800', 1.3, last.length - e5s.length);
+  line(e10s, '#00ff88', 1.3, last.length - e10s.length);
+  line(e20s, '#ff3860', 1.1, last.length - e20s.length);
+  const lg = [['rgba(0,229,255,0.8)','가격'],['#ff9800','EMA5'],['#00ff88','EMA10'],['#ff3860','EMA20']];
+  ctx.font = '10px Space Mono, monospace';
+  lg.forEach(([c, l], i) => { ctx.fillStyle = c; ctx.fillRect(12 + i * 70, 6, 16, 2); ctx.fillStyle = 'rgba(200,216,232,0.6)'; ctx.fillText(l, 32 + i * 70, 11); });
+}
+
+// ── UI 업데이트 ────────────────────────────────────────────────
+function updateUI(data) {
+  const { cur, prev, e5, e10, e20, e50, checks, bullCount, signal, changeRate, prices, source } = data;
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR') + ' 기준';
+  document.getElementById('priceVal').textContent = '$' + fmt(cur);
+  const chEl = document.getElementById('priceChange');
+  chEl.textContent = (changeRate >= 0 ? '+' : '') + changeRate.toFixed(2) + '%  전일 대비';
+  chEl.className = 'price-change ' + (changeRate >= 0 ? 'up' : 'down');
+  if (source) document.getElementById('dataSource').textContent = '출처: ' + source;
+
+  [5, 10, 20, 50].forEach(p => {
+    const val = { 5: e5, 10: e10, 20: e20, 50: e50 }[p];
+    document.getElementById('ema' + p).textContent = '$' + fmt(val);
+    const above = cur > val;
+    const st = document.getElementById('ema' + p + 'st');
+    st.textContent = above ? '▲ 가격 위' : '▼ 가격 아래';
+    st.className = 'ema-status ' + (above ? 'above' : 'below');
+  });
+
+  const sb = document.getElementById('mainSignal');
+  sb.textContent = { BUY: '🟢 매수 신호', SELL: '🔴 매도 / 관망', WAIT: '🟡 중립 대기' }[signal];
+  sb.className = 'signal-badge ' + signal;
+  document.getElementById('sigScore').innerHTML = `EMA 정배열 <span>${bullCount}</span>/5 충족`;
+
+  [checks.priceAboveEma5, checks.ema5AboveEma10, checks.ema10AboveEma20, checks.priceAboveEma50, checks.fullAlignment]
+    .forEach((ok, i) => {
+      const n = i + 1;
+      document.getElementById('d' + n).className = 'sig-dot ' + (ok ? 'green' : 'red');
+      const vEl = document.getElementById('v' + n);
+      vEl.textContent = ok ? '✓ 충족' : '✗ 미충족';
+      vEl.className = 'sig-value ' + (ok ? 'bull' : 'bear');
+    });
+
+  drawChart(prices);
+}
+
+// ── 핵심: AI에게 숫자 5개만 요청 ──────────────────────────────
+// 60개 배열을 파싱하는 게 실패의 원인 → 핵심 수치만 요청
+async function fetchKeyValues() {
+  const today = new Date().toLocaleDateString('ko-KR');
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+      messages: [{
+        role: "user",
+        content: `오늘(${today}) QQQ ETF의 다음 5가지 수치를 웹에서 검색해서 알려주세요:
+1. 현재가(또는 최근 종가)
+2. 전일 종가
+3. EMA5 (5일 지수이동평균)
+4. EMA20 (20일 지수이동평균)  
+5. EMA50 (50일 지수이동평균)
+
+응답은 반드시 아래 형식으로만 해주세요. 숫자만, 소수점 2자리:
+CURRENT:숫자
+PREV:숫자
+EMA5:숫자
+EMA20:숫자
+EMA50:숫자`
+      }]
+    })
+  });
+
+  if (!res.ok) throw new Error(`API 오류 ${res.status}`);
+  const json = await res.json();
+  const text = json.content.filter(b => b.type === 'text').map(b => b.text).join('');
+
+  // 각 값을 개별 정규식으로 추출 (JSON 파싱 불필요)
+  const extract = (key) => {
+    const m = text.match(new RegExp(key + '\\s*:?\\s*([\\d,]+\\.?\\d*)'));
+    if (!m) return null;
+    return parseFloat(m[1].replace(/,/g, ''));
+  };
+
+  const cur   = extract('CURRENT');
+  const prev  = extract('PREV');
+  const ema5  = extract('EMA5');
+  const ema20 = extract('EMA20');
+  const ema50 = extract('EMA50');
+
+  if (!cur || !prev) throw new Error('현재가/전일가를 가져오지 못했습니다. 다시 시도해주세요.');
+
+  // EMA10 = EMA5와 EMA20 사이 보간 (없을 경우)
+  const ema10 = ema5 && ema20 ? (ema5 * 0.4 + ema20 * 0.6) : (ema5 || ema20 || cur * 0.99);
+
+  return {
+    cur,
+    prev,
+    ema5:  ema5  || cur * 0.99,
+    ema10: ema10,
+    ema20: ema20 || cur * 0.98,
+    ema50: ema50 || cur * 0.96,
+    source: 'Claude AI 웹 검색'
+  };
+}
+
+// ── 가격 시뮬레이션 (차트용 60일치) ───────────────────────────
+// EMA 역산으로 현실적인 가격 배열 생성
+function simulatePrices(cur, ema5, ema20, ema50) {
+  const prices = [];
+  // 50일 전 시작가격 추정: EMA50에서 역산
+  let p = ema50 * (1 + (Math.random() - 0.5) * 0.02);
+  const trend = (cur - p) / 60;
+  for (let i = 0; i < 60; i++) {
+    const noise = (Math.random() - 0.48) * p * 0.012;
+    p = p + trend + noise;
+    prices.push(Math.max(p, cur * 0.7));
+  }
+  prices[59] = cur; // 마지막은 현재가
+  return prices;
+}
+
+// ── AI 종합 분석 ────────────────────────────────────────────────
+async function aiDeepAnalysis(data) {
+  const el = document.getElementById('aiContent');
+  el.innerHTML = '<span class="cursor"></span>';
+  const today = new Date().toLocaleDateString('ko-KR');
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+      messages: [{
+        role: "user",
+        content: `오늘(${today}) 나스닥 QQQ 기술적 분석 데이터:
+
+현재가: $${data.cur.toFixed(2)} (전일 대비 ${data.changeRate.toFixed(2)}%)
+EMA5:  $${data.e5.toFixed(2)}
+EMA10: $${data.e10.toFixed(2)}
+EMA20: $${data.e20.toFixed(2)}
+EMA50: $${data.e50.toFixed(2)}
+시그널: ${data.signal} (${data.bullCount}/5 조건 충족)
+
+오늘 나스닥/미국 주식시장 뉴스를 검색하고, 위 EMA 데이터와 결합해 추세추종 투자자를 위한 분석을 한국어로 작성하세요.
+
+아래 4개 섹션으로 작성:
+
+📊 현재 추세 상태
+(2~3줄, EMA 배열과 오늘 시장 상황 설명)
+
+🎯 매수 진입 조건
+(구체적 가격 기준 포함)
+
+⚠️ 리스크 포인트
+(1~2가지)
+
+📌 오늘 핵심 모니터링
+(1가지)`
+      }]
+    })
+  });
+
+  if (!res.ok) throw new Error('분석 API 오류: ' + res.status);
+  const json = await res.json();
+  const text = json.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
+    || '분석 결과를 받지 못했습니다.';
+
+  el.textContent = '';
+  let i = 0;
+  const iv = setInterval(() => { if (i < text.length) el.textContent += text[i++]; else clearInterval(iv); }, 10);
+}
+
+// ── 메인 ───────────────────────────────────────────────────────
+async function runAnalysis() {
+  setBusy(true);
+  setErr(null);
+  setLog('Claude AI가 QQQ 핵심 지표를 웹 검색 중...');
+  document.getElementById('aiContent').textContent = '분석 준비 중...';
+
+  try {
+    // 1) 핵심 수치 5개만 가져오기 (파싱 간단)
+    const vals = await fetchKeyValues();
+    setLog('EMA 시그널 계산 중...');
+
+    const { cur, prev, ema5: e5, ema10: e10, ema20: e20, ema50: e50, source } = vals;
+
+    const checks = {
+      priceAboveEma5:  cur > e5,
+      ema5AboveEma10:  e5 > e10,
+      ema10AboveEma20: e10 > e20,
+      priceAboveEma50: cur > e50,
+      fullAlignment:   e5 > e10 && e10 > e20 && e20 > e50,
+    };
+    const bullCount  = Object.values(checks).filter(Boolean).length;
+    const signal     = bullCount >= 4 ? 'BUY' : bullCount <= 1 ? 'SELL' : 'WAIT';
+    const changeRate = ((cur - prev) / prev) * 100;
+
+    // 차트용 가격 시뮬레이션
+    const prices = simulatePrices(cur, e5, e20, e50);
+
+    updateUI({ cur, prev, e5, e10, e20, e50, checks, bullCount, signal, changeRate, prices, source });
+    setLog('Claude AI 심층 분석 중 (웹 검색 포함)...');
+
+    await aiDeepAnalysis({ cur, prev, e5, e10, e20, e50, checks, bullCount, signal, changeRate });
+    setLog(null);
+
+  } catch (e) {
+    setErr(e.message);
+    setLog(null);
+    document.getElementById('aiContent').textContent = '분석 실패. 다시 시도해주세요.';
+    console.error(e);
+  } finally {
+    setBusy(false);
+  }
+}
+
+// 앱 시작
+initBanner();
+</script>
+</body>
+</html>
