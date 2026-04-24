@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EMA Tracker">
+<meta name="theme-color" content="#06080c">
+<title>EMA Trend Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;600;700&display=swap');
+:root{--bg:#06080c;--s1:#0c1018;--s2:#111822;--bd:#1c2838;--cy:#00d4ff;--gn:#00e676;--rd:#ff4455;--yl:#ffab00;--tx:#d0dce8;--dm:#4a5a6a;--wh:#f0f4f8}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(0,212,255,0.015) 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(0,212,255,0.015) 60px);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:16px 14px 80px}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:14px}
+.hdr h1{font-family:'DM Mono',monospace;font-size:.95rem;color:var(--cy);letter-spacing:3px;font-weight:500}
+.hdr .sub{font-size:.58rem;color:var(--dm);letter-spacing:1px;margin-top:2px}
+.hdr .tm{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--dm);text-align:right}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:linear-gradient(135deg,rgba(0,212,255,0.07),rgba(0,230,118,0.04));border:1px solid rgba(0,212,255,0.2);border-radius:11px;color:var(--cy);font-family:'DM Mono',monospace;font-size:.75rem;letter-spacing:2px;cursor:pointer;transition:all .2s;margin-bottom:10px}
+.btn:hover{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.35)}
+.btn:disabled{color:var(--dm);border-color:var(--bd);cursor:not-allowed}
+.btn .sp{display:none;width:13px;height:13px;border:2px solid var(--dm);border-top-color:var(--cy);border-radius:50%;animation:spin .7s linear infinite}
+.btn.ld .sp{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pbar{width:100%;height:2px;background:var(--bd);border-radius:2px;margin-bottom:4px;overflow:hidden;display:none}
+.pbar.on{display:block}
+.pbar i{display:block;height:100%;background:var(--cy);border-radius:2px;transition:width .3s}
+.stxt{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--dm);text-align:center;margin-bottom:10px;min-height:16px}
+.slbl{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:3px;color:var(--dm);margin:18px 0 9px;display:flex;align-items:center;gap:8px}
+.slbl::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+.c{background:var(--s1);border:1px solid var(--bd);border-radius:11px;padding:13px 15px;margin-bottom:7px;position:relative;overflow:hidden;animation:fu .35s ease both}
+.c::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--dm)}
+.c.buy::before{background:var(--gn)}.c.wait::before{background:var(--yl)}.c.sell::before{background:var(--rd)}
+@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.ct{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.ct .tk{font-family:'DM Mono',monospace;font-size:.95rem;font-weight:600;color:var(--wh)}
+.ct .wt{font-size:.58rem;color:var(--dm);margin-left:5px}
+.ct .sc{font-size:.62rem;color:var(--dm)}
+.sig{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:1px;padding:3px 9px;border-radius:18px;font-weight:600}
+.sig.buy{background:rgba(0,230,118,0.1);color:var(--gn);border:1px solid rgba(0,230,118,0.22)}
+.sig.wait{background:rgba(255,171,0,0.1);color:var(--yl);border:1px solid rgba(255,171,0,0.22)}
+.sig.sell{background:rgba(255,68,85,0.1);color:var(--rd);border:1px solid rgba(255,68,85,0.22)}
+.sig.na{background:rgba(74,90,106,0.1);color:var(--dm);border:1px solid var(--bd)}
+.cb{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:7px}
+.cs{text-align:center;padding:5px 3px;background:var(--s2);border-radius:5px}
+.cs .l{font-size:.5rem;color:var(--dm);letter-spacing:1px;margin-bottom:1px}
+.cs .v{font-family:'DM Mono',monospace;font-size:.75rem;font-weight:500}
+.cs .v.up{color:var(--gn)}.cs .v.dn{color:var(--rd)}.cs .v.nu{color:var(--tx)}
+.ce{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.ec{text-align:center;padding:3px 2px;border-radius:4px;font-family:'DM Mono',monospace;font-size:.58rem}
+.ec .el{font-size:.45rem;color:var(--dm);display:block;margin-bottom:1px;letter-spacing:.5px}
+.ec.ab{background:rgba(0,230,118,0.07);color:var(--gn)}
+.ec.bl{background:rgba(255,68,85,0.07);color:var(--rd)}
+.ec.nn{background:var(--s2);color:var(--dm)}
+.cd{font-size:.68rem;color:var(--dm);margin-top:7px;padding-top:7px;border-top:1px solid var(--bd);line-height:1.5}
+.foot{font-size:.58rem;color:var(--dm);text-align:center;margin-top:18px;padding:10px;border:1px dashed rgba(74,90,106,0.25);border-radius:8px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div>
+      <h1>TREND TRACKER</h1>
+      <div class="sub">주봉 EMA 5/10/20 · MACD · Twelve Data</div>
+    </div>
+    <div><div class="tm" id="tm">--</div></div>
+  </div>
+
+  <button class="btn" id="btn" onclick="scanAll()">
+    <div class="sp"></div>
+    <span>SCAN ALL STOCKS</span>
+  </button>
+
+  <div class="pbar" id="pb"><i id="pbf" style="width:0%"></i></div>
+  <div class="stxt" id="st"></div>
+
+  <div class="slbl">HOLDINGS (6)</div>
+  <div id="hld"></div>
+
+  <div class="slbl">WATCHLIST (4)</div>
+  <div id="wtc"></div>
+
+  <div id="portfolioSection" style="display:none;margin-top:24px">
+    <div class="slbl" style="color:var(--cy)">★ RECOMMENDED PORTFOLIO</div>
+    <div id="portfolioContent"></div>
+  </div>
+
+  <!-- Fear & Greed Index -->
+  <div style="margin-top:24px">
+    <div class="slbl" style="color:var(--yl)">MARKET SENTIMENT</div>
+    <div class="c" style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--wh);font-weight:600">Fear & Greed Index</div>
+          <div style="font-size:.6rem;color:var(--dm);margin-top:2px">Source: CNN Business</div>
+        </div>
+        <button onclick="loadFearGreed()"
+          style="padding:5px 12px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:6px;color:var(--cy);font-family:'DM Mono',monospace;font-size:.6rem;cursor:pointer">
+          REFRESH
+        </button>
+      </div>
+
+      <!-- Gauge -->
+      <div style="text-align:center;padding:16px 0 8px">
+        <canvas id="fgiGauge" width="280" height="150" style="max-width:100%"></canvas>
+        <div style="margin-top:6px">
+          <div style="font-family:'DM Mono',monospace;font-size:2rem;font-weight:700" id="fgiValue">--</div>
+          <div style="font-size:.85rem;font-weight:600;margin-top:2px" id="fgiLabel">--</div>
+          <div style="font-size:.58rem;color:var(--dm);margin-top:4px" id="fgiDate">--</div>
+        </div>
+      </div>
+
+      <!-- History row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:10px 0">
+        <div class="cs"><div class="l">전날</div><div class="v nu" id="fgiPrev">--</div></div>
+        <div class="cs"><div class="l">1주전</div><div class="v nu" id="fgiWeek">--</div></div>
+        <div class="cs"><div class="l">1달전</div><div class="v nu" id="fgiMonth">--</div></div>
+        <div class="cs"><div class="l">1년전</div><div class="v nu" id="fgiYear">--</div></div>
+      </div>
+
+      <!-- Guide -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:8px;font-size:.55rem;text-align:center">
+        <div style="padding:5px 2px;background:rgba(255,68,85,0.15);border-radius:4px;color:var(--rd)">0-25<br>극단공포</div>
+        <div style="padding:5px 2px;background:rgba(255,100,85,0.1);border-radius:4px;color:#ff7755">25-45<br>공포</div>
+        <div style="padding:5px 2px;background:rgba(255,171,0,0.1);border-radius:4px;color:var(--yl)">45-55<br>중립</div>
+        <div style="padding:5px 2px;background:rgba(100,200,100,0.1);border-radius:4px;color:#88dd88">55-75<br>탐욕</div>
+        <div style="padding:5px 2px;background:rgba(0,230,118,0.15);border-radius:4px;color:var(--gn)">75-100<br>극단탐욕</div>
+      </div>
+
+      <!-- Strategy tip -->
+      <div style="margin-top:10px;padding:10px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);border-radius:6px;font-size:.65rem;color:var(--tx);line-height:1.7" id="fgiTip">
+        REFRESH를 눌러 최신 지수를 불러오세요.
+      </div>
+
+      <a href="https://www.cnn.com/markets/fear-and-greed" target="_blank"
+        style="display:block;margin-top:10px;padding:8px;text-align:center;background:var(--s2);border:1px solid var(--bd);border-radius:6px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--cy);text-decoration:none">
+        CNN Fear & Greed 전체 보기 →
+      </a>
+    </div>
+  </div>
+
+  <div class="foot">
+    Twelve Data API · Free: 800 calls/day, 8/min<br>
+    <b>주봉(Weekly) EMA 5/10/20 & MACD 기준</b><br>
+    For reference only. Not investment advice.
+  </div>
+</div>
+
+<script>
+const TD_KEY = 'aa87760dae7b4654a35d136302b3ea0e';
+const BASE = 'https://api.twelvedata.com';
+
+// Store scan results for portfolio recommendation
+const SCAN_RESULTS = {};
+
+const HOLD = [
+  {t:'AIQ',n:'AI / Technology',w:'25%'},
+  {t:'ARKX',n:'Space / Defense',w:'15%'},
+  {t:'URA',n:'Uranium / Energy',w:'12%'},
+  {t:'GDX',n:'Gold Miners',w:'10%'},
+  {t:'IBB',n:'Biotech / Health',w:'10%'},
+  {t:'COPX',n:'Copper / Materials',w:'8%'},
+];
+const WATCH = [
+  {t:'XLF',n:'Financials'},
+  {t:'XLP',n:'Consumer Staples'},
+  {t:'MGK',n:'Mega Cap Growth'},
+  {t:'ITB',n:'Home Construction'},
+];
+
+// ── Card HTML ──
+function mkCard(item) {
+  const id = item.t;
+  const wt = item.w ? `<span class="wt">${item.w}</span>` : '';
+  return `<div class="c" id="c-${id}">
+    <div class="ct">
+      <div><span class="tk">${id}${wt}</span><div class="sc">${item.n}</div></div>
+      <span class="sig na" id="sg-${id}">--</span>
+    </div>
+    <div class="cb">
+      <div class="cs"><div class="l">PRICE</div><div class="v nu" id="pr-${id}">--</div></div>
+      <div class="cs"><div class="l">CHG%</div><div class="v nu" id="ch-${id}">--</div></div>
+      <div class="cs"><div class="l">RSI</div><div class="v nu" id="rs-${id}">--</div></div>
+    </div>
+    <div class="ce">
+      <div class="ec nn" id="e5-${id}"><span class="el">EMA5</span>--</div>
+      <div class="ec nn" id="e10-${id}"><span class="el">EMA10</span>--</div>
+      <div class="ec nn" id="e20-${id}"><span class="el">EMA20</span>--</div>
+      <div class="ec nn" id="al-${id}"><span class="el">ALIGN</span>--</div>
+    </div>
+    <div class="ce" style="margin-top:3px">
+      <div class="ec nn" id="mh-${id}"><span class="el">MACD HIST</span>--</div>
+      <div class="ec nn" id="mc-${id}"><span class="el">CROSSOVER</span>--</div>
+      <div class="ec nn" id="ms-${id}"><span class="el">MOMENTUM</span>--</div>
+      <div class="ec nn" id="sc-${id}"><span class="el">SCORE</span>--</div>
+    </div>
+    <div class="cd" id="dt-${id}">Waiting for scan...</div>
+  </div>`;
+}
+
+// ── Twelve Data fetch helpers ──
+async function tdFetch(endpoint, params) {
+  const qs = new URLSearchParams({ ...params, apikey: TD_KEY }).toString();
+  const res = await fetch(`${BASE}/${endpoint}?${qs}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.code === 429) throw new Error('Rate limit. Wait a moment.');
+  if (data.status === 'error') throw new Error(data.message || 'API error');
+  return data;
+}
+
+// ── Get WEEKLY prices (주봉 기준) ──
+async function getTimeSeries(symbol) {
+  const data = await tdFetch('time_series', {
+    symbol, interval: '1week', outputsize: 60
+  });
+  if (!data.values || !data.values.length) throw new Error('No data');
+  return data.values.slice().reverse().map(v => parseFloat(v.close));
+}
+
+// Calculate EMA locally
+function calcEMA(prices, period) {
+  if (prices.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < prices.length; i++) {
+    ema = prices[i] * k + ema * (1 - k);
+  }
+  return ema;
+}
+
+// Calculate RSI locally
+function calcRSI(prices, period = 14) {
+  if (prices.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = prices[i] - prices[i - 1];
+    if (diff > 0) gains += diff; else losses -= diff;
+  }
+  let avgGain = gains / period, avgLoss = losses / period;
+  for (let i = period + 1; i < prices.length; i++) {
+    const diff = prices[i] - prices[i - 1];
+    avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
+    avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+  }
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+// Calculate MACD (12,26,9) — returns { macd, signal, hist, prevHist }
+function calcMACD(prices) {
+  if (prices.length < 35) return null;
+  // Build full EMA12 and EMA26 arrays for signal line
+  const k12 = 2 / (12 + 1), k26 = 2 / (26 + 1), k9 = 2 / (9 + 1);
+
+  // Seed EMA12
+  let ema12 = prices.slice(0, 12).reduce((a,b) => a+b, 0) / 12;
+  let ema26 = prices.slice(0, 26).reduce((a,b) => a+b, 0) / 26;
+
+  // Build MACD line from index 25 onward
+  for (let i = 12; i < 26; i++) ema12 = prices[i] * k12 + ema12 * (1 - k12);
+
+  const macdLine = [];
+  for (let i = 26; i < prices.length; i++) {
+    ema12 = prices[i] * k12 + ema12 * (1 - k12);
+    ema26 = prices[i] * k26 + ema26 * (1 - k26);
+    macdLine.push(ema12 - ema26);
+  }
+
+  if (macdLine.length < 9) return null;
+
+  // Build signal line (EMA9 of MACD)
+  let sig = macdLine.slice(0, 9).reduce((a,b) => a+b, 0) / 9;
+  const histLine = [];
+  for (let i = 9; i < macdLine.length; i++) {
+    sig = macdLine[i] * k9 + sig * (1 - k9);
+    histLine.push(macdLine[i] - sig);
+  }
+
+  if (histLine.length < 2) return null;
+
+  const hist = histLine[histLine.length - 1];
+  const prevHist = histLine[histLine.length - 2];
+  const macd = macdLine[macdLine.length - 1];
+  const signal = macd - hist;
+
+  // Crossover detection
+  const crossUp = prevHist < 0 && hist >= 0;   // 음→양
+  const crossDn = prevHist > 0 && hist <= 0;   // 양→음
+
+  return { macd, signal, hist, prevHist, crossUp, crossDn };
+}
+
+// ── Scan one ticker (ONLY 1 API call) — 7-point scoring ──
+async function scanOne(ticker) {
+  try {
+    const closes = await getTimeSeries(ticker);
+    const price = closes[closes.length - 1];
+    const prevClose = closes[closes.length - 2];
+    const change = ((price - prevClose) / prevClose) * 100;
+
+    const ema5  = calcEMA(closes, 5);
+    const ema10 = calcEMA(closes, 10);
+    const ema20 = calcEMA(closes, 20);
+    const rsi   = calcRSI(closes);
+    const macd  = calcMACD(closes);
+
+    const aligned = ema5 > ema10 && ema10 > ema20;
+    const abv5  = price > ema5;
+    const abv20 = price > ema20;
+
+    // ── 7-point scoring ──
+    let score = 0;
+    if (abv5) score++;                          // 1. 가격 > EMA5
+    if (ema5 > ema10) score++;                  // 2. EMA5 > EMA10
+    if (ema10 > ema20) score++;                 // 3. EMA10 > EMA20
+    if (abv20) score++;                         // 4. 가격 > EMA20
+    if (aligned) score++;                       // 5. 완전 정배열
+    if (macd && macd.hist > 0) score++;         // 6. MACD 히스토그램 양수
+    if (macd && macd.crossUp) score++;          // 7. 음→양 크로스
+
+    // Signal: 7점 만점
+    let signal = 'WAIT';
+    if (score >= 5) signal = 'BUY';
+    else if (score <= 2) signal = 'SELL';
+
+    // Detail text
+    const macdTag = macd
+      ? (macd.crossUp  ? '🟢 음→양 CROSS' :
+         macd.crossDn  ? '🔴 양→음 CROSS' :
+         macd.hist > 0 ? '▲ 양수 유지' :
+                         '▼ 음수 유지')
+      : 'N/A';
+
+    let detail = `${score}/7점 | EMA: ${ema5.toFixed(1)}/${ema10.toFixed(1)}/${ema20.toFixed(1)} | MACD: ${macdTag}`;
+    if (signal === 'BUY' && rsi >= 70) detail += ' | RSI 과열 눌림 대기';
+    else if (signal === 'BUY' && macd?.crossUp) detail += ' | 강한 매수 신호!';
+    else if (signal === 'BUY') detail += ' | 추세 정상';
+    else if (signal === 'SELL') detail += ' | 추세 이탈';
+    else detail += ' | 확인 대기';
+
+    return { price, change, rsi, ema5, ema10, ema20, aligned, macd, score, signal, detail };
+  } catch (e) {
+    return {
+      price:null, change:null, rsi:null,
+      ema5:null, ema10:null, ema20:null,
+      aligned:false, macd:null, score:0,
+      signal:'ERR', detail:'Error: ' + e.message
+    };
+  }
+}
+
+// ── Update card UI ──
+function updateCard(ticker, d) {
+  const card = document.getElementById(`c-${ticker}`);
+  if (!card) return;
+
+  const sigMap = { BUY:'buy', WAIT:'wait', SELL:'sell' };
+  const sg = document.getElementById(`sg-${ticker}`);
+  sg.textContent = d.signal;
+  sg.className = 'sig ' + (sigMap[d.signal] || 'na');
+  card.className = 'c ' + (sigMap[d.signal] || '');
+
+  const pr = document.getElementById(`pr-${ticker}`);
+  pr.textContent = d.price ? '$' + d.price.toFixed(2) : '--';
+
+  const ch = document.getElementById(`ch-${ticker}`);
+  if (d.change !== null && d.change !== undefined) {
+    const up = d.change >= 0;
+    ch.textContent = (up ? '+' : '') + d.change.toFixed(2) + '%';
+    ch.className = 'v ' + (up ? 'up' : 'dn');
+  }
+
+  const rs = document.getElementById(`rs-${ticker}`);
+  if (d.rsi) {
+    rs.textContent = d.rsi.toFixed(0);
+    rs.className = 'v ' + (d.rsi >= 70 ? 'dn' : 'up');
+  }
+
+  const emas = [
+    { id:'e5', label:'EMA5', val:d.ema5, above: d.price > d.ema5 },
+    { id:'e10', label:'EMA10', val:d.ema10, above: d.price > d.ema10 },
+    { id:'e20', label:'EMA20', val:d.ema20, above: d.price > d.ema20 },
+  ];
+  emas.forEach(e => {
+    const el = document.getElementById(`${e.id}-${ticker}`);
+    if (e.val) {
+      el.className = 'ec ' + (e.above ? 'ab' : 'bl');
+      el.innerHTML = `<span class="el">${e.label}</span>${e.val.toFixed(1)}`;
+    }
+  });
+
+  const al = document.getElementById(`al-${ticker}`);
+  al.className = 'ec ' + (d.aligned ? 'ab' : 'bl');
+  al.innerHTML = `<span class="el">ALIGN</span>${d.aligned ? 'YES' : 'NO'}`;
+
+  // MACD row
+  const mh = document.getElementById(`mh-${ticker}`);
+  const mc = document.getElementById(`mc-${ticker}`);
+  const ms = document.getElementById(`ms-${ticker}`);
+  const sc = document.getElementById(`sc-${ticker}`);
+
+  if (d.macd) {
+    // Histogram value
+    const histPos = d.macd.hist >= 0;
+    mh.className = 'ec ' + (histPos ? 'ab' : 'bl');
+    mh.innerHTML = `<span class="el">MACD HIST</span>${d.macd.hist.toFixed(2)}`;
+
+    // Crossover signal
+    if (d.macd.crossUp) {
+      mc.className = 'ec ab';
+      mc.innerHTML = `<span class="el">CROSSOVER</span>음→양`;
+    } else if (d.macd.crossDn) {
+      mc.className = 'ec bl';
+      mc.innerHTML = `<span class="el">CROSSOVER</span>양→음`;
+    } else {
+      mc.className = 'ec nn';
+      mc.innerHTML = `<span class="el">CROSSOVER</span>${histPos ? '양 유지' : '음 유지'}`;
+    }
+
+    // Momentum (increasing / decreasing histogram)
+    const growing = d.macd.hist > d.macd.prevHist;
+    ms.className = 'ec ' + (growing ? 'ab' : 'bl');
+    ms.innerHTML = `<span class="el">MOMENTUM</span>${growing ? '▲ 강해짐' : '▼ 약해짐'}`;
+  }
+
+  // Score chip (7점 만점)
+  if (d.score !== undefined) {
+    const s = d.score;
+    const scoreColor = s >= 6 ? 'ab' : s >= 4 ? 'nn' : 'bl';
+    const scoreLabel = s >= 6 ? '최강' : s >= 5 ? '매수' : s >= 4 ? '보통' : s >= 3 ? '대기' : '약세';
+    sc.className = 'ec ' + scoreColor;
+    sc.innerHTML = `<span class="el">SCORE</span>${s}/7 ${scoreLabel}`;
+  }
+
+  document.getElementById(`dt-${ticker}`).textContent = d.detail;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Main scan ──
+async function scanAll() {
+  const btn = document.getElementById('btn');
+  const pb = document.getElementById('pb');
+  const pbf = document.getElementById('pbf');
+  const st = document.getElementById('st');
+
+  btn.disabled = true;
+  btn.classList.add('ld');
+  pb.classList.add('on');
+
+  const all = [...HOLD, ...WATCH];
+  let success = 0, fail = 0;
+
+  for (let i = 0; i < all.length; i++) {
+    const t = all[i].t;
+    st.textContent = `${t} scanning... (${i + 1}/${all.length})`;
+    pbf.style.width = ((i + 1) / all.length * 100) + '%';
+
+    const data = await scanOne(t);
+    SCAN_RESULTS[t] = { ...data, name: all[i].n, defaultWeight: all[i].w };
+    updateCard(t, data);
+
+    if (data.signal === 'ERR') {
+      fail++;
+      if (data.detail.includes('Rate limit')) {
+        st.textContent = `Rate limited at ${t}. Wait 60s and retry.`;
+        break;
+      }
+    } else {
+      success++;
+    }
+
+    // Twelve Data free: 8 calls/min. Now 1 call per ticker = 8s interval safe
+    if (i < all.length - 1) await sleep(8000);
+  }
+
+  st.textContent = `Complete! ${success} scanned` + (fail > 0 ? `, ${fail} failed` : '') + ` | ${success} API calls used`;
+  document.getElementById('tm').textContent = new Date().toLocaleString('ko-KR');
+
+  if (success > 0) buildPortfolio();
+
+  btn.disabled = false;
+  btn.classList.remove('ld');
+  pb.classList.remove('on');
+}
+
+// ── Portfolio Recommendation ──
+function buildPortfolio() {
+  const results = Object.entries(SCAN_RESULTS).filter(([t, d]) => d.signal !== 'ERR');
+  if (results.length === 0) return;
+
+  // Classify stocks by new 7-point system
+  const buys = results.filter(([t, d]) => d.signal === 'BUY');
+  const waits = results.filter(([t, d]) => d.signal === 'WAIT');
+  const sells = results.filter(([t, d]) => d.signal === 'SELL');
+
+  // Score each BUY: use raw score + RSI/MACD quality
+  const buyScored = buys.map(([t, d]) => {
+    let quality = d.score || 0;
+    // Bonus: MACD cross up
+    if (d.macd?.crossUp) quality += 1;
+    // Penalty: RSI overbought
+    if (d.rsi >= 75) quality -= 2;
+    else if (d.rsi >= 70) quality -= 1;
+    // Bonus: EMA gap tight (price close to EMA5)
+    if (d.price && d.ema5) {
+      const gap = Math.abs((d.price - d.ema5) / d.ema5) * 100;
+      if (gap < 2) quality += 1;
+    }
+    return { ticker: t, data: d, quality };
+  }).sort((a, b) => b.quality - a.quality);
+
+  // Allocation strategy
+  // BUY candidates (max 7): distribute 75% of portfolio
+  // WAIT candidates: 5% each (max 5%)
+  // Cash: always 20% minimum
+  const maxBuyTotal = 75;
+  const cashReserve = 20;
+  const watchAllocation = 5;
+
+  // Distribute BUY weight by score (higher score = more weight)
+  const buyAllocations = [];
+  if (buyScored.length > 0) {
+  const weights = [25, 15, 12, 10, 8, 5];
+  buyScored.forEach((item, i) => {
+    let baseWeight = weights[i] || 5;
+    if (item.data.rsi >= 75) baseWeight = Math.max(5, baseWeight - 5);
+    if (item.data.macd?.crossUp) baseWeight = Math.min(25, baseWeight + 3);
+    buyAllocations.push({ ...item, weight: baseWeight });
+  });
+  }
+
+  // Normalize to fit within 75% if exceeds
+  let totalBuyWeight = buyAllocations.reduce((s, a) => s + a.weight, 0);
+  if (totalBuyWeight > maxBuyTotal) {
+    const ratio = maxBuyTotal / totalBuyWeight;
+    buyAllocations.forEach(a => a.weight = Math.round(a.weight * ratio));
+  }
+
+  // Recalculate total after normalization
+  totalBuyWeight = buyAllocations.reduce((s, a) => s + a.weight, 0);
+  const adjustedCash = Math.max(cashReserve, 100 - totalBuyWeight);
+
+  // Build HTML
+  let html = `
+    <div class="c" style="animation-delay:0s">
+      <div style="font-size:.75rem;color:var(--tx);line-height:1.7;margin-bottom:10px">
+        Based on scan results, here is the recommended allocation:
+      </div>
+      <table style="width:100%;font-size:.75rem;border-collapse:collapse">
+        <thead>
+          <tr style="color:var(--dm);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:1px;border-bottom:1px solid var(--bd)">
+            <th style="text-align:left;padding:6px 4px">TICKER</th>
+            <th style="text-align:left;padding:6px 4px">SECTOR</th>
+            <th style="text-align:center;padding:6px 4px">SIG</th>
+            <th style="text-align:right;padding:6px 4px">WEIGHT</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  // BUY rows (sorted by weight)
+  buyAllocations.forEach(item => {
+    const d = item.data;
+    const rsiTag = d.rsi >= 70 ? ` <span style="color:var(--yl);font-size:.55rem">(RSI ${d.rsi.toFixed(0)})</span>` : '';
+    html += `
+      <tr style="border-bottom:1px solid rgba(28,40,56,0.5)">
+        <td style="padding:8px 4px;font-family:'DM Mono',monospace;color:var(--wh);font-weight:600">${item.ticker}${rsiTag}</td>
+        <td style="padding:8px 4px;color:var(--tx);font-size:.68rem">${d.name}</td>
+        <td style="padding:8px 4px;text-align:center"><span class="sig buy" style="font-size:.55rem">BUY</span></td>
+        <td style="padding:8px 4px;text-align:right;font-family:'DM Mono',monospace;color:var(--gn);font-weight:600">${item.weight}%</td>
+      </tr>
+    `;
+  });
+
+  // WAIT rows (show only for reference, 0% weight)
+  waits.forEach(([t, d]) => {
+    html += `
+      <tr style="border-bottom:1px solid rgba(28,40,56,0.5);opacity:0.5">
+        <td style="padding:8px 4px;font-family:'DM Mono',monospace;color:var(--tx)">${t}</td>
+        <td style="padding:8px 4px;color:var(--dm);font-size:.68rem">${d.name}</td>
+        <td style="padding:8px 4px;text-align:center"><span class="sig wait" style="font-size:.55rem">WAIT</span></td>
+        <td style="padding:8px 4px;text-align:right;color:var(--dm)">0%</td>
+      </tr>
+    `;
+  });
+
+  // SELL rows
+  sells.forEach(([t, d]) => {
+    html += `
+      <tr style="border-bottom:1px solid rgba(28,40,56,0.5);opacity:0.5">
+        <td style="padding:8px 4px;font-family:'DM Mono',monospace;color:var(--tx)">${t}</td>
+        <td style="padding:8px 4px;color:var(--dm);font-size:.68rem">${d.name}</td>
+        <td style="padding:8px 4px;text-align:center"><span class="sig sell" style="font-size:.55rem">SELL</span></td>
+        <td style="padding:8px 4px;text-align:right;color:var(--dm)">0%</td>
+      </tr>
+    `;
+  });
+
+  // Cash row
+  html += `
+      <tr style="background:rgba(0,212,255,0.05)">
+        <td style="padding:10px 4px;font-family:'DM Mono',monospace;color:var(--cy);font-weight:600">CASH</td>
+        <td style="padding:10px 4px;color:var(--tx);font-size:.68rem">Reserve / Dip Buying</td>
+        <td style="padding:10px 4px;text-align:center">—</td>
+        <td style="padding:10px 4px;text-align:right;font-family:'DM Mono',monospace;color:var(--cy);font-weight:600">${adjustedCash}%</td>
+      </tr>
+    </tbody>
+    </table>
+  `;
+
+  // Summary stats
+  const totalAllocated = totalBuyWeight + adjustedCash;
+  html += `
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--bd);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:.65rem;text-align:center">
+      <div>
+        <div style="color:var(--dm);font-size:.55rem;letter-spacing:1px">INVESTED</div>
+        <div style="font-family:'DM Mono',monospace;color:var(--gn);font-size:.95rem;font-weight:600;margin-top:2px">${totalBuyWeight}%</div>
+      </div>
+      <div>
+        <div style="color:var(--dm);font-size:.55rem;letter-spacing:1px">CASH</div>
+        <div style="font-family:'DM Mono',monospace;color:var(--cy);font-size:.95rem;font-weight:600;margin-top:2px">${adjustedCash}%</div>
+      </div>
+      <div>
+        <div style="color:var(--dm);font-size:.55rem;letter-spacing:1px">POSITIONS</div>
+        <div style="font-family:'DM Mono',monospace;color:var(--wh);font-size:.95rem;font-weight:600;margin-top:2px">${buyAllocations.length}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;padding:10px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:6px;font-size:.65rem;color:var(--tx);line-height:1.7">
+      <div style="color:var(--cy);font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:1px;margin-bottom:4px">ALLOCATION LOGIC (7-POINT SYSTEM)</div>
+      • EMA 5조건 + MACD 2조건 = 7점 만점<br>
+      • 점수 순으로 비중 배분 (25%→15%→12%→10%→8%→5%)<br>
+      • MACD 음→양 크로스: +3% 비중 보너스<br>
+      • RSI ≥ 75 과열: -5% 비중 페널티<br>
+      • 현금 최소 20% 항상 유지
+    </div>
+  </div>
+  `;
+
+  document.getElementById('portfolioContent').innerHTML = html;
+  document.getElementById('portfolioSection').style.display = 'block';
+}
+
+// Init
+document.getElementById('hld').innerHTML = HOLD.map(mkCard).join('');
+document.getElementById('wtc').innerHTML = WATCH.map(mkCard).join('');
+
+// ── Fear & Greed Index (via Twelve Data VIX + market data) ──
+function drawGauge(value) {
+  const canvas = document.getElementById('fgiGauge');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const cx = W/2, cy = H-20, r = 110;
+
+  // Background arc
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, Math.PI, 0);
+  ctx.lineWidth = 22;
+  ctx.strokeStyle = '#1c2838';
+  ctx.stroke();
+
+  // Color gradient arc
+  const stops = [
+    [0,    '#ff4455'],
+    [0.25, '#ff7733'],
+    [0.5,  '#ffab00'],
+    [0.75, '#88dd44'],
+    [1.0,  '#00e676'],
+  ];
+  const safe = Math.max(1, Math.min(99, value));
+  const endAngle = Math.PI + (safe/100) * Math.PI;
+  const segCount = 50;
+  for (let i = 0; i < segCount; i++) {
+    const t0 = i / segCount, t1 = (i+1) / segCount;
+    if (t1 > safe/100) break;
+    const a0 = Math.PI + t0 * Math.PI;
+    const a1 = Math.PI + t1 * Math.PI;
+    // Interpolate color
+    let c = '#ffab00';
+    for (let s = 0; s < stops.length-1; s++) {
+      if (t0 >= stops[s][0] && t0 < stops[s+1][0]) {
+        c = stops[s+1][1]; break;
+      }
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, a0, a1);
+    ctx.lineWidth = 22;
+    ctx.strokeStyle = c;
+    ctx.stroke();
+  }
+
+  // Needle
+  const needleAngle = Math.PI + (safe/100) * Math.PI;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + (r-5)*Math.cos(needleAngle), cy + (r-5)*Math.sin(needleAngle));
+  ctx.strokeStyle = '#f0f4f8';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, 0, 2*Math.PI);
+  ctx.fillStyle = '#f0f4f8';
+  ctx.fill();
+
+  // Labels
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#4a5a6a';
+  ctx.textAlign = 'center';
+  ctx.fillText('0', cx-r-8, cy+4);
+  ctx.fillText('100', cx+r+14, cy+4);
+  ctx.fillText('50', cx, cy-r-8);
+}
+
+function getFgiColor(v) {
+  if (v <= 25) return '#ff4455';
+  if (v <= 45) return '#ff7733';
+  if (v <= 55) return '#ffab00';
+  if (v <= 75) return '#88dd44';
+  return '#00e676';
+}
+function getFgiLabel(v) {
+  if (v <= 25) return '극단적 공포 (Extreme Fear)';
+  if (v <= 45) return '공포 (Fear)';
+  if (v <= 55) return '중립 (Neutral)';
+  if (v <= 75) return '탐욕 (Greed)';
+  return '극단적 탐욕 (Extreme Greed)';
+}
+function getFgiTip(v) {
+  if (v <= 25) return '🟢 극단적 공포 — 최고의 매수 기회. 정배열 확인 후 적극 진입.';
+  if (v <= 45) return '🟡 공포 구간 — 눌림목 분할 매수 적합. EMA5 터치 시 진입 고려.';
+  if (v <= 55) return '⚪ 중립 — 추세대로 홀드. 특별한 액션 불필요.';
+  if (v <= 75) return '🟡 탐욕 — 신규 진입 신중. RSI 과매수 여부 확인.';
+  return '🔴 극단적 탐욕 — 신규 매수 자제. 청산 기준 강화.';
+}
+
+// VIX → Fear & Greed 근사값 변환
+// VIX 10=탐욕80, VIX 20=중립50, VIX 30=공포25, VIX 40+=극단공포10
+function vixToFGI(vix) {
+  if (vix <= 12) return Math.round(90 - (vix - 10) * 5);
+  if (vix <= 20) return Math.round(80 - (vix - 12) * 3.75);
+  if (vix <= 30) return Math.round(50 - (vix - 20) * 2.5);
+  if (vix <= 40) return Math.round(25 - (vix - 30) * 1.5);
+  return Math.max(5, Math.round(10 - (vix - 40)));
+}
+
+async function loadFearGreed() {
+  const valEl  = document.getElementById('fgiValue');
+  const lblEl  = document.getElementById('fgiLabel');
+  const tipEl  = document.getElementById('fgiTip');
+  const dateEl = document.getElementById('fgiDate');
+
+  valEl.textContent = '...';
+  lblEl.textContent = '로딩 중';
+  tipEl.textContent = 'VIX 데이터 로딩 중...';
+  drawGauge(0);
+
+  try {
+    // Fetch VIX from Twelve Data (same API key)
+    const vixData = await tdFetch('quote', { symbol: 'VIX', exchange: 'CBOE' });
+    const vix = parseFloat(vixData.close || vixData.price || 20);
+
+    // Also fetch SPY momentum (price vs 125-day MA proxy)
+    const spyData = await tdFetch('time_series', {
+      symbol: 'SPY', interval: '1day', outputsize: 130
+    });
+    const spyCloses = spyData.values.slice().reverse().map(v => parseFloat(v.close));
+    const spy125MA = spyCloses.slice(-125).reduce((a,b) => a+b,0) / 125;
+    const spyCurrent = spyCloses[spyCloses.length-1];
+    const momentumBull = spyCurrent > spy125MA;
+
+    // Calculate FGI approximation
+    let fgi = vixToFGI(vix);
+    // Adjust by momentum
+    if (momentumBull) fgi = Math.min(100, fgi + 8);
+    else fgi = Math.max(0, fgi - 8);
+
+    drawGauge(fgi);
+    const color = getFgiColor(fgi);
+
+    valEl.textContent = fgi;
+    valEl.style.color = color;
+    lblEl.textContent = getFgiLabel(fgi);
+    lblEl.style.color = color;
+    dateEl.textContent = `VIX: ${vix.toFixed(1)} | SPY ${momentumBull ? '↑' : '↓'} 125일선 | ${new Date().toLocaleString('ko-KR')}`;
+    tipEl.textContent = getFgiTip(fgi);
+
+    // History placeholders (VIX 기반이라 과거 비교는 현재 수치만 표시)
+    ['fgiPrev','fgiWeek','fgiMonth','fgiYear'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '--';
+      el.style.color = 'var(--dm)';
+    });
+    document.getElementById('fgiPrev').textContent = fgi;
+    document.getElementById('fgiPrev').style.color = color;
+
+  } catch(e) {
+    valEl.textContent = '?';
+    lblEl.textContent = '로드 실패: ' + e.message;
+    tipEl.innerHTML = 'Twelve Data API로 VIX를 가져오지 못했습니다.<br>' +
+      '<a href="https://www.cnn.com/markets/fear-and-greed" target="_blank" style="color:var(--cy)">CNN 직접 확인 →</a>';
+  }
+}
+
+window.addEventListener('load', () => { drawGauge(50); });
+</script>
+</body>
+</html>
