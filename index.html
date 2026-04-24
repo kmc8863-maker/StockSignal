@@ -743,16 +743,6 @@ function getFgiTip(v) {
   return '🔴 극단적 탐욕 — 신규 매수 자제. 청산 기준 강화.';
 }
 
-// VIX → Fear & Greed 근사값 변환
-// VIX 10=탐욕80, VIX 20=중립50, VIX 30=공포25, VIX 40+=극단공포10
-function vixToFGI(vix) {
-  if (vix <= 12) return Math.round(90 - (vix - 10) * 5);
-  if (vix <= 20) return Math.round(80 - (vix - 12) * 3.75);
-  if (vix <= 30) return Math.round(50 - (vix - 20) * 2.5);
-  if (vix <= 40) return Math.round(25 - (vix - 30) * 1.5);
-  return Math.max(5, Math.round(10 - (vix - 40)));
-}
-
 async function loadFearGreed() {
   const valEl  = document.getElementById('fgiValue');
   const lblEl  = document.getElementById('fgiLabel');
@@ -765,24 +755,33 @@ async function loadFearGreed() {
   drawGauge(0);
 
   try {
-    // Fetch VIX from Twelve Data - correct symbol
-    const vixData = await tdFetch('quote', { symbol: 'VIX' });
-    const vix = parseFloat(vixData.close || vixData.previous_close || 20);
-
-    // Also fetch SPY momentum (price vs 125-day MA proxy)
+    // SPY 데이터로 Fear & Greed 근사값 계산 (VIX는 Twelve Data 미지원)
     const spyData = await tdFetch('time_series', {
       symbol: 'SPY', interval: '1day', outputsize: 130
     });
     const spyCloses = spyData.values.slice().reverse().map(v => parseFloat(v.close));
-    const spy125MA = spyCloses.slice(-125).reduce((a,b) => a+b,0) / 125;
-    const spyCurrent = spyCloses[spyCloses.length-1];
-    const momentumBull = spyCurrent > spy125MA;
+    const spyCurrent = spyCloses[spyCloses.length - 1];
+    const spyPrev = spyCloses[spyCloses.length - 2];
 
-    // Calculate FGI approximation
-    let fgi = vixToFGI(vix);
-    // Adjust by momentum
-    if (momentumBull) fgi = Math.min(100, fgi + 8);
-    else fgi = Math.max(0, fgi - 8);
+    // 125일 이동평균 (모멘텀)
+    const spy125MA = spyCloses.slice(-125).reduce((a,b) => a+b,0) / 125;
+    const momentumPct = ((spyCurrent - spy125MA) / spy125MA) * 100;
+
+    // 52주 고저 강도 (가격 강도)
+    const spy52High = Math.max(...spyCloses.slice(-252));
+    const spy52Low = Math.min(...spyCloses.slice(-252));
+    const priceStrength = ((spyCurrent - spy52Low) / (spy52High - spy52Low)) * 100;
+
+    // RSI 14
+    const spyRSI = calcRSI(spyCloses);
+
+    // Fear & Greed 근사값 계산
+    // 모멘텀 40% + 가격강도 35% + RSI 25%
+    const momentumScore = Math.min(100, Math.max(0, 50 + momentumPct * 2));
+    const strengthScore = priceStrength;
+    const rsiScore = spyRSI;
+    let fgi = Math.round(momentumScore * 0.4 + strengthScore * 0.35 + rsiScore * 0.25);
+    fgi = Math.min(100, Math.max(0, fgi));
 
     drawGauge(fgi);
     const color = getFgiColor(fgi);
@@ -791,14 +790,11 @@ async function loadFearGreed() {
     valEl.style.color = color;
     lblEl.textContent = getFgiLabel(fgi);
     lblEl.style.color = color;
-    dateEl.textContent = `VIX: ${vix.toFixed(1)} | SPY ${momentumBull ? '↑' : '↓'} 125일선 | ${new Date().toLocaleString('ko-KR')}`;
+    dateEl.textContent = `SPY ${spyCurrent.toFixed(1)} | 125일선 ${momentumPct > 0 ? '▲' : '▼'}${Math.abs(momentumPct).toFixed(1)}% | ${new Date().toLocaleString('ko-KR')}`;
     tipEl.textContent = getFgiTip(fgi);
 
-    // History placeholders (VIX 기반이라 과거 비교는 현재 수치만 표시)
     ['fgiPrev','fgiWeek','fgiMonth','fgiYear'].forEach(id => {
-      const el = document.getElementById(id);
-      el.textContent = '--';
-      el.style.color = 'var(--dm)';
+      document.getElementById(id).textContent = '--';
     });
     document.getElementById('fgiPrev').textContent = fgi;
     document.getElementById('fgiPrev').style.color = color;
