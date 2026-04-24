@@ -765,9 +765,9 @@ async function loadFearGreed() {
   drawGauge(0);
 
   try {
-    // Fetch VIX from Twelve Data (same API key)
-    const vixData = await tdFetch('quote', { symbol: 'VIX', exchange: 'CBOE' });
-    const vix = parseFloat(vixData.close || vixData.price || 20);
+    // Fetch VIX from Twelve Data - correct symbol
+    const vixData = await tdFetch('quote', { symbol: 'VIX' });
+    const vix = parseFloat(vixData.close || vixData.previous_close || 20);
 
     // Also fetch SPY momentum (price vs 125-day MA proxy)
     const spyData = await tdFetch('time_series', {
